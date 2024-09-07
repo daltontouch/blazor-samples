@@ -1,12 +1,14 @@
+using BlazorWebAppOidc;
+using BlazorWebAppOidc.Client.Secrets;
+using BlazorWebAppOidc.Client.Weather;
+using BlazorWebAppOidc.Components;
+using BlazorWebAppOidc.Secrets;
+using BlazorWebAppOidc.Weather;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using BlazorWebAppOidc;
-using BlazorWebAppOidc.Client.Weather;
-using BlazorWebAppOidc.Components;
-using BlazorWebAppOidc.Weather;
 
 const string MS_OIDC_SCHEME = "MicrosoftOidc";
 
@@ -70,16 +72,17 @@ builder.Services.AddAuthentication(MS_OIDC_SCHEME)
         // single-tenant apps, but it requires a custom IssuerValidator as shown 
         // in the comments below. 
 
-        oidcOptions.Authority = "https://login.microsoftonline.com/{TENANT ID}/v2.0/";
+        var tenantId = builder.Configuration["Authentication:Microsoft:TenantId"];
+        oidcOptions.Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0/";
         // ........................................................................
 
         // ........................................................................
         // Set the Client ID for the app. Set the {CLIENT ID} placeholder to
         // the Client ID.
 
-        oidcOptions.ClientId = "{CLIENT ID}";
+        oidcOptions.ClientId = builder.Configuration["Authentication:Microsoft:ClientId"];
         // ........................................................................
-        
+
         // ........................................................................
         // ClientSecret shouldn't be compiled into the application assembly or 
         // checked into source control. Adopt User Secrets, Azure KeyVault, 
@@ -156,6 +159,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddScoped<AuthenticationStateProvider, PersistingAuthenticationStateProvider>();
 
 builder.Services.AddScoped<IWeatherForecaster, ServerWeatherForecaster>();
+builder.Services.AddScoped<ISecretsGetter, ServerSecretsGetter>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -186,6 +190,11 @@ var summaries = new[]
 app.MapGet("/weather-forecast", ([FromServices] IWeatherForecaster WeatherForecaster) =>
 {
     return WeatherForecaster.GetWeatherForecastAsync();
+}).RequireAuthorization();
+
+app.MapGet("/get-secrets", ([FromServices] ISecretsGetter SecretsGetter) =>
+{
+    return SecretsGetter.GetSecretsAsync();
 }).RequireAuthorization();
 
 app.MapRazorComponents<App>()

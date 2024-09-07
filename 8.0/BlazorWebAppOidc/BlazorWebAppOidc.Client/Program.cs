@@ -1,7 +1,8 @@
+using BlazorWebAppOidc.Client;
+using BlazorWebAppOidc.Client.Secrets;
+using BlazorWebAppOidc.Client.Weather;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using BlazorWebAppOidc.Client;
-using BlazorWebAppOidc.Client.Weather;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -10,6 +11,11 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<AuthenticationStateProvider, PersistentAuthenticationStateProvider>();
 
 builder.Services.AddHttpClient<IWeatherForecaster, ClientWeatherForecaster>(httpClient =>
+{
+    httpClient.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
+});
+
+builder.Services.AddHttpClient<ISecretsGetter, ClientSecretsGetter>(httpClient =>
 {
     httpClient.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress);
 });
